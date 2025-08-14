@@ -59,8 +59,10 @@ export class DatabaseService {
             pool.on('connect', () => console.log(`✓ Conexión exitosa a ${databaseName}`));
             pool.on('error', (err) => console.error(`Error en la conexión a ${databaseName}:`, err.message));
 
-            this.pool = pool.connect();
+            await pool.connect();
+            this.pool = Promise.resolve(pool);
             return pool;
+
         } catch (err) {
             console.error('Error al conectar a la base de datos:', err);
             throw err;

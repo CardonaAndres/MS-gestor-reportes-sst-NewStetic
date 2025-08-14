@@ -2,6 +2,7 @@ import morgan from 'morgan';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 
 async function main() {
   const app = await NestFactory.create(AppModule);
@@ -22,6 +23,14 @@ async function main() {
   });
 
   app.use(morgan('dev'));
+
+  app.setGlobalPrefix('API-REPORTS/v1');  
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist : true,
+    forbidNonWhitelisted: true, 
+    transform: true             
+  }));
 
   await app.listen(process.env.PORT || 3003, () => {
     console.log(`Server running on port ${process.env.PORT || 3003}`);
