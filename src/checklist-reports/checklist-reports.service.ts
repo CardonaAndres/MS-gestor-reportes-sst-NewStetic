@@ -39,15 +39,22 @@ export class ChecklistReportsService {
          .query(`
             ${queries.baseQueryReport} 
             ${AddToQuery} 
-            ORDER BY chit.checklist_item_id OFFSET (@page - 1) * @limit ROWS FETCH NEXT @limit ROWS ONLY;`
+            ORDER BY chit.checklist_item_id OFFSET (@page - 1) * @limit ROWS FETCH NEXT @limit ROWS ONLY;
+        `);
+
+        const totalCount = await conn?.request().query(`            
+            ${queries.totalRegisters}
+            ${AddToQuery}`
         );
 
         return {
             message: 'Reporte generado correctamente',
-            data: result?.recordset,
+            results: result?.recordset,
             meta: {
                 page,
                 limit,
+                totalRegisters: totalCount?.recordset[0]?.totalRegisters || 0,
+                totalPages: Math.ceil((totalCount?.recordset[0]?.totalRegisters || 0) / limit)
             }
         }
     }

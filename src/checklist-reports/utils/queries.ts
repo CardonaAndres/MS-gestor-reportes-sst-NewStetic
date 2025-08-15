@@ -21,3 +21,13 @@ INNER JOIN tipos_examenes tpem
     ON tpem.tipo_examen_id = chem.tipo_examen_id
 WHERE chit.estado NOT IN ('Eliminado') 
 `;
+
+export const totalRegisters = `
+SELECT COUNT(*) AS totalRegisters
+FROM checklist_items chit 
+INNER JOIN checklist_examenes chem 
+    ON chit.checklist_id = chem.checklist_id 
+INNER JOIN tipos_examenes tpem 
+    ON tpem.tipo_examen_id = chem.tipo_examen_id
+WHERE chit.estado NOT IN ('Eliminado')
+`;
