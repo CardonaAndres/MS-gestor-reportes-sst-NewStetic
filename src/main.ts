@@ -24,7 +24,7 @@ async function main() {
 
   app.use(morgan('dev'));
 
-  app.setGlobalPrefix('API-REPORTS/v1');  
+  app.setGlobalPrefix('API-SST-REPORTS/v1');  
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist : true,
