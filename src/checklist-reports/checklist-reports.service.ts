@@ -3,13 +3,15 @@ import * as queries from './utils/queries';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/app/database/database.service';
 import { FiltersDto } from './dto/filters.dto';
+import type { Request } from 'express';
 
 @Injectable()
 export class ChecklistReportsService {
     constructor(private readonly dbService: DatabaseService){}
 
-    async generateReport(filters: FiltersDto){
+    async generateReport(filters: FiltersDto, req: Request){
         let AddToQuery = '';
+        // req.headers.authorization?.split(' ')[1] || '';
         const { page = 1, limit = 10, ...queryFilters } = filters;
 
         const allEmpty = Object.values(queryFilters).every(value => {
@@ -23,7 +25,7 @@ export class ChecklistReportsService {
 
         if(queryFilters.collaborators && queryFilters.collaborators.length >= 1)
             AddToQuery += ` AND chem.cc_empleado IN (${queryFilters.collaborators.map(c => `'${c}'`).join(', ')})`;
-
+        
         if(queryFilters.examTypeID) AddToQuery += ` AND tpem.tipo_examen_id = ${queryFilters.examTypeID}`;
 
         if(queryFilters.examStatus) AddToQuery += ` AND chit.estado = '${queryFilters.examStatus}'`;

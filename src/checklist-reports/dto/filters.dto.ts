@@ -13,6 +13,14 @@ export class FiltersDto {
   examTypeID?: string; 
 
   @IsOptional()
+  @IsString()
+  collaboratorsStatus?: string; 
+
+  @IsOptional()
+  @IsString()
+  collaboratorType?: string; 
+
+  @IsOptional()
   @IsDateString()
   startDate?: string; 
 
