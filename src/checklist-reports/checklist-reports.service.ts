@@ -11,7 +11,7 @@ export class ChecklistReportsService {
 
     async generateReport(filters: FiltersDto, req: Request){
         let AddToQuery = '';
-        // req.headers.authorization?.split(' ')[1] || '';
+        let collaborators = [];
         const { page = 1, limit = 10, ...queryFilters } = filters;
 
         const allEmpty = Object.values(queryFilters).every(value => {
@@ -22,6 +22,32 @@ export class ChecklistReportsService {
         });
 
         if(allEmpty) throw new BadRequestException('No se han proporcionado filtros para generar el reporte.');
+
+        if(queryFilters.collaboratorType || queryFilters.collaboratorsStatus){
+            let addToURL = ''
+
+            if (queryFilters.collaboratorType) 
+                addToURL += `${addToURL ? '&' : '?'}collaboratorType=${queryFilters.collaboratorType}`;
+
+            if (queryFilters.collaboratorsStatus) 
+                addToURL += `${addToURL ? '&' : '?'}collaboratorsStatus=${queryFilters.collaboratorsStatus}`;
+
+
+            const reqToUsers = await fetch(`${process.env.STAFF_SERVICE}/staff/to-reports${addToURL}`, {
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "authorization": `Bearer ${req.headers.authorization?.split(' ')[1] || ''}` 
+                }
+            });
+
+            const dataFromUsers = await reqToUsers.json();
+            if(!reqToUsers.ok) 
+                throw new BadRequestException(dataFromUsers.message || 'Error al obtener datos de usuarios');
+
+            collaborators = dataFromUsers.users;
+
+        }
 
         if(queryFilters.collaborators && queryFilters.collaborators.length >= 1)
             AddToQuery += ` AND chem.cc_empleado IN (${queryFilters.collaborators.map(c => `'${c}'`).join(', ')})`;
