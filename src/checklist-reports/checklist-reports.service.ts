@@ -1,11 +1,9 @@
 import * as mssql from 'mssql';
 import * as queries from './utils/queries';
-import { StaffAPI } from './utils/staffAPI';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/app/database/database.service';
 import { FiltersDto } from './dto/filters.dto';
 import type { Request } from 'express';
-import { ReportFiltersUtil } from './utils/report-filters.util';
 
 @Injectable()
 export class ChecklistReportsService {
@@ -13,8 +11,6 @@ export class ChecklistReportsService {
 
     async generateReport(filters: FiltersDto, req: Request){
         let addToQuery = '';
-        let totalRegisters: number = 0;
-        let resultsWithFilters: any[] = [];
         const { page = 1, limit = 10, ...queryFilters } = filters;
 
         const allEmpty = Object.values(queryFilters).every(value => {
@@ -35,51 +31,41 @@ export class ChecklistReportsService {
 
         if(queryFilters.startDate) addToQuery += ` AND chit.fecha_realizado >= '${queryFilters.startDate}'`;
 
-        if(queryFilters.endDate) addToQuery += ` AND chit.fecha_realizado <= '${queryFilters.endDate}'`;
+        if(queryFilters.endDate) addToQuery += ` AND chit.fecha_vencimiento <= '${queryFilters.endDate}'`;
 
-        const conn = await this.dbService.connect(process.env.DB_SST_NAME || 'localhost');
+        if(queryFilters.collaboratorType){
+            const isNSColaborator = String(queryFilters.collaboratorsStatus).toLowerCase() === 'new stetic'
+            addToQuery += ` AND emp.Empresa = '${isNSColaborator ? 'New Stetic' : 'Temporal'}'`
+        }
+
+        if(queryFilters.collaboratorsStatus){
+            const isColaboratorActive = queryFilters.collaboratorsStatus === 'ACTIVO';
+            addToQuery += ` AND emp.ESTADO = '${isColaboratorActive ? 'ACTIVO' : 'INACTIVO'}'`
+        }
+
+        const conn = await this.dbService.connect(process.env.DB_COMP_NAME || 'localhost');
         const result = await conn?.request() 
          .input('page', mssql.Int, page)
          .input('limit', mssql.Int, limit)
          .query(`
             ${queries.baseQueryReport} 
             ${addToQuery} 
-            ${queryFilters.collaboratorType || queryFilters.collaboratorsStatus 
-                ? '' 
-                : `ORDER BY chit.checklist_item_id OFFSET (@page - 1) * @limit ROWS FETCH NEXT @limit ROWS ONLY`
-            }
+            ORDER BY chit.checklist_item_id ASC OFFSET (@page - 1) * @limit ROWS FETCH NEXT @limit ROWS ONLY;
         `);
 
-        resultsWithFilters = result?.recordset || [];
+        const totalCount = await conn?.request().query(`            
+            ${queries.totalRegisters}
+            ${addToQuery}`
+        );
 
-        const docsSource = !queryFilters.collaborators
-         ? result?.recordset.map(item => item.cc_empleado) 
-         : queryFilters.collaborators || [];
-
-        const userDocuments = [...new Set(docsSource)];
-
-        if(queryFilters.collaboratorType && queryFilters.collaboratorsStatus)
-            resultsWithFilters = await ReportFiltersUtil.filterByTypeAndStatus(filters, userDocuments, result, req)
-        
-        if (!queryFilters.collaboratorType && !queryFilters.collaboratorsStatus) {
-            const totalCount = await conn?.request().query(`
-                ${queries.totalRegisters}
-                ${addToQuery}
-            `);
-
-            totalRegisters = totalCount?.recordset[0]?.totalRegisters || 0;
-        } else {
-            totalRegisters = resultsWithFilters.length;
-        }
-        
         return {
             message: 'Reporte generado correctamente',
-            results: resultsWithFilters,
+            results: result?.recordset,
             meta: {
                 page,
                 limit,
-                totalRegisters,
-                totalPages: Math.ceil((totalRegisters || 0) / limit)
+                totalRegisters: totalCount?.recordset[0]?.totalRegisters || 0,
+                totalPages: Math.ceil((totalCount?.recordset[0]?.totalRegisters || 0) / limit)
             }
         }
     }
