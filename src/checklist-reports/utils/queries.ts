@@ -33,17 +33,13 @@ SELECT DISTINCT
 
 FROM SST_LINK.SST_NS.dbo.tipos_examenes tpem
 
--- JOIN principal: desde tipos de exámenes hacia checklist
 INNER JOIN SST_LINK.SST_NS.dbo.checklist_examenes chem 
     ON tpem.tipo_examen_id = chem.tipo_examen_id
 
--- JOIN hacia items del checklist
 LEFT JOIN SST_LINK.SST_NS.dbo.checklist_items chit 
     ON chit.checklist_id = chem.checklist_id
 
--- JOIN hacia información de empleados
 LEFT JOIN (
-    -- Subquery de empleados (solo empleados activos de New Stetic)
     SELECT DISTINCT 
         t200.f200_nit,
         

@@ -3,13 +3,12 @@ import * as queries from './utils/queries';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/app/database/database.service';
 import { FiltersDto } from './dto/filters.dto';
-import type { Request } from 'express';
 
 @Injectable()
 export class ChecklistReportsService {
     constructor(private readonly dbService: DatabaseService){}
 
-    async generateReport(filters: FiltersDto, req: Request){
+    async generateReport(filters: FiltersDto){
         let addToQuery = '';
         const { page = 1, limit = 10, ...queryFilters } = filters;
 
@@ -34,7 +33,7 @@ export class ChecklistReportsService {
         if(queryFilters.endDate) addToQuery += ` AND chit.fecha_vencimiento <= '${queryFilters.endDate}'`;
 
         if(queryFilters.collaboratorType){
-            const isNSColaborator = String(queryFilters.collaboratorsStatus).toLowerCase() === 'new stetic'
+            const isNSColaborator = String(queryFilters.collaboratorType).toLowerCase() === 'new stetic'
             addToQuery += ` AND emp.Empresa = '${isNSColaborator ? 'New Stetic' : 'Temporal'}'`
         }
 
